@@ -1,24 +1,17 @@
-// Variables
 let palabraContainer = document.getElementById("palabra");
 let pistasContainer = document.getElementById("pistas");
 let intentosContainer = document.getElementById("intentos");
 let letrasContainer = document.getElementById("letras");
 let imagenAhorcado = document.getElementById("imagenAhorcado");
 let cronometro = document.getElementById("cronometro");
+
 let modal = document.getElementById("modal");
 let modalMensaje = document.getElementById("modalMensaje");
 let btnAceptar = document.getElementById("btnAceptar");
+
 let btnReiniciar = document.getElementById("btnReiniciar");
 let btnSalir = document.getElementById("btnSalir");
 let btnPausa = document.getElementById("btnPausa");
-
-let palabras = [
-    {palabra: "BARCELONA", pistas: ["Ciudad en España", "Tiene la famosa iglesia La Sagrada Familia", "Conocida por el mejor club de fútbol"], imagen: "BARCELONA.png"},
-    {palabra: "GUATEMALA", pistas: ["País de Centroamérica", "Capital con mismo nombre", "Famoso por el quetzal"], imagen: "GUATEMALA.png"},
-    {palabra: "COMPUTADORA", pistas: ["Se usa para programar", "Puede ser portátil", "Procesa información"], imagen: "COMPUTADORA.png"},
-    {palabra: "COCODRILO", pistas: ["Es un animal grande", "Es un reptil", "Suelen vivir en mucha soledad"], imagen: "COCODRILO.png"},
-    {palabra: "TELEFONO", pistas: ["Sirve para comunicación", "Puede ser móvil o fijo", "Se conecta a la red"], imagen: "TELEFONO.png"}
-];
 
 let palabraSecreta = "";
 let palabraMostrada = [];
@@ -29,47 +22,77 @@ let tiempoLimite = 10 * 60;
 let tiempoRestante = tiempoLimite;
 let letrasOriginales = [];
 
-// Eventos 
+
+let palabraImagen = "";
+let imagenesPalabras = {
+    "BARCELONA": "BARCELONA.png",
+    "GUATEMALA": "GUATEMALA.png",
+    "COMPUTADORA": "COMPUTADORA.png",
+    "COCODRILO": "COCODRILO.png",
+    "TELEFONO": "TELEFONO.png"
+};
+
+// --- Eventos ---
 btnReiniciar.addEventListener("click", iniciarJuego);
+btnSalir.addEventListener("click", () => window.location.href = "index.jsp");
+btnAceptar.addEventListener("click", () => modal.classList.remove("show"));
+btnPausa.addEventListener("click", () => juegoPausado ? continuarJuego() : pausarJuego());
 
-btnSalir.addEventListener("click", function () {
-    window.location.href = "index.jsp";
-});
+window.addEventListener("load", iniciarJuego);
 
-btnAceptar.addEventListener("click", function () {
-    modal.classList.remove("show");
-});
+// --- Funciones ---
+function validarLogin() {
+    let usuario = document.getElementById('usuario').value;
+    let contrasena = document.getElementById('contrasena').value;
+    let mensajeError = document.getElementById('mensaje-error');
 
-btnPausa.addEventListener("click", () => {
-    if (juegoPausado) {
-        continuarJuego();
+    if (usuario === "1" && contrasena === "1") {
+        window.location.href = "inicio.jsp";
+        return false;
     } else {
-        pausarJuego();
+        mensajeError.textContent = "Usuario o contraseña incorrectos.";
+        return false;
     }
-});
+}
 
-// Funciones 
+function togglePassword() {
+    let input = document.getElementById("contrasena");
+    input.type = input.type === "password" ? "text" : "password";
+}
 
-function iniciarJuego() {
-    let obj = palabras[Math.floor(Math.random() * palabras.length)];
-    palabraSecreta = obj.palabra;
-    palabraMostrada = Array(palabraSecreta.length).fill("_");
+async function iniciarJuego() {
+    juegoPausado = false;
     intentos = 8;
     tiempoRestante = tiempoLimite;
 
-    actualizarPalabra();
-    generarPistas(obj.pistas);
-    actualizarIntentos();
-    generarBotones();
+    try {
+        let respuesta = await fetch('./Controlador?accion=obtenerPalabra');
+        if (!respuesta.ok)
+            throw new Error("Error al obtener la palabra del servidor");
+        const palabraData = await respuesta.json();
 
-    imagenAhorcado.src = "images/Ahorcado0.png";
+        palabraSecreta = palabraData.palabra;
+        palabraMostrada = Array(palabraSecreta.length).fill("_");
 
-    if (intervaloTiempo)
-        clearInterval(intervaloTiempo);
-    juegoPausado = false;
-    btnPausa.textContent = "Pausa";
-    btnPausa.disabled = false;
-    iniciarCronometro();
+        palabraImagen = imagenesPalabras[palabraSecreta.toUpperCase()] || "default.png";
+
+        actualizarPalabra();
+        generarPistas([palabraData.pista1, palabraData.pista2, palabraData.pista3]);
+        actualizarIntentos();
+        generarBotones();
+
+        imagenAhorcado.src = "images/Ahorcado0.png";
+        btnPausa.textContent = "Pausa";
+        btnPausa.disabled = false;
+
+        if (intervaloTiempo)
+            clearInterval(intervaloTiempo);
+        iniciarCronometro();
+
+    } catch (error) {
+        console.error("Error en la petición:", error);
+        palabraContainer.textContent = "No se pudo iniciar el juego.";
+    }
 }
 
 function actualizarPalabra() {
@@ -78,11 +101,11 @@ function actualizarPalabra() {
 
 function generarPistas(pistas) {
     pistasContainer.innerHTML = "";
-    for (let i = 0; i < pistas.length; i++) {
-        let pista = document.createElement("p");
-        pista.textContent = `Pista ${i + 1}: ${pistas[i]}`;
-        pistasContainer.appendChild(pista);
-    }
+    pistas.forEach((pista, i) => {
+        let p = document.createElement("p");
+        p.textContent = `Pista ${i + 1}: ${pista}`;
+        pistasContainer.appendChild(p);
+    });
 }
 
 function actualizarIntentos() {
@@ -92,89 +115,75 @@ function actualizarIntentos() {
 function generarBotones() {
     letrasContainer.innerHTML = "";
     let abecedario = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
-    for (let i = 0; i < abecedario.length; i++) {
-        let letra = abecedario[i];
+    letrasOriginales = abecedario.split("");
+
+    abecedario.split("").forEach(letra => {
         let btn = document.createElement("button");
         btn.textContent = letra;
         btn.classList.remove("usado");
         btn.disabled = false;
-        btn.addEventListener("click", function () {
-            probarLetra(letra, btn);
-        });
+        btn.addEventListener("click", () => probarLetra(letra, btn));
         letrasContainer.appendChild(btn);
-    }
-    letrasOriginales = abecedario.split("");
+    });
 }
 
 function probarLetra(letra, boton) {
     if (juegoPausado)
         return;
+
     boton.disabled = true;
     boton.classList.add("usado");
+
     if (palabraSecreta.includes(letra)) {
         for (let i = 0; i < palabraSecreta.length; i++) {
-            if (palabraSecreta[i] === letra) {
+            if (palabraSecreta[i] === letra)
                 palabraMostrada[i] = letra;
-            }
         }
         actualizarPalabra();
         if (!palabraMostrada.includes("_")) {
             mostrarModal("ganaste");
-            deshabilitarBotones();
-            clearInterval(intervaloTiempo);
-            deshabilitarPausa();
+            finalizarJuego();
         }
     } else {
         intentos--;
         actualizarIntentos();
         let errores = 8 - intentos;
-        if (errores > 0 && errores <= 8) {
+        if (errores > 0 && errores <= 8)
             imagenAhorcado.src = `images/Ahorcado${errores}.png`;
-        }
-
         if (intentos <= 0) {
             mostrarModal("perdiste");
-            deshabilitarBotones();
-            clearInterval(intervaloTiempo);
-            deshabilitarPausa();
+            finalizarJuego();
         }
     }
+}
+
+function finalizarJuego() {
+    deshabilitarBotones();
+    clearInterval(intervaloTiempo);
+    btnPausa.disabled = true;
 }
 
 function deshabilitarBotones() {
-    let botones = letrasContainer.querySelectorAll("button");
-    for (let i = 0; i < botones.length; i++) {
-        botones[i].disabled = true;
-    }
-}
-
-function deshabilitarPausa() {
-    btnPausa.disabled = true;
+    letrasContainer.querySelectorAll("button").forEach(b => b.disabled = true);
 }
 
 function mostrarModal(estado) {
     let mensaje = "";
-    let imagenRuta = "";
 
-    let objPalabraActual = palabras.find(p => p.palabra === palabraSecreta);
+    if (estado === "ganaste")
+        mensaje = `¡Felicitaciones! Has ganado. La palabra era:`;
+    else if (estado === "perdiste")
+        mensaje = `Perdiste. La palabra era:`;
+    else if (estado === "tiempo")
+        mensaje = `¡Se acabó el tiempo! Perdiste. La palabra era:`;
 
-    if (estado === "ganaste") {
-        mensaje = "¡Felicitaciones! HAS GANADO La palabra era:";
-        imagenRuta = `images/${objPalabraActual.imagen}`;
-    } else if (estado === "perdiste") {
-        mensaje = "Perdiste. La palabra era:";
-        imagenRuta = `images/${objPalabraActual.imagen}`;
-    } else if (estado === "tiempo") {
-        mensaje = "¡Se acabó el tiempo! Perdiste. La palabra era:";
-        imagenRuta = `images/${objPalabraActual.imagen}`;
-    }
-    document.getElementById("modalTexto").textContent = mensaje;
-    document.getElementById("modalPalabra").textContent = palabraSecreta;
-    document.getElementById("modalImagen").src = imagenRuta;
-    document.getElementById("modalImagen").alt = palabraSecreta;
+    modalMensaje.innerHTML = `
+        <p>${mensaje}</p>
+        <p class="palabra-modal">${palabraSecreta}</p>
+        <img src="images/${palabraImagen}" alt="${palabraSecreta}" class="imagen-modal">
+    `;
     modal.classList.add("show");
 }
-
 
 function mostrarTiempo() {
     let minutos = Math.floor(tiempoRestante / 60);
@@ -184,8 +193,6 @@ function mostrarTiempo() {
 
 function iniciarCronometro() {
     mostrarTiempo();
-    if (intervaloTiempo)
-        clearInterval(intervaloTiempo);
     intervaloTiempo = setInterval(() => {
         if (!juegoPausado) {
             tiempoRestante--;
@@ -193,8 +200,7 @@ function iniciarCronometro() {
             if (tiempoRestante <= 0) {
                 clearInterval(intervaloTiempo);
                 mostrarModal("tiempo");
-                deshabilitarBotones();
-                deshabilitarPausa();
+                finalizarJuego();
             }
         }
     }, 1000);
@@ -203,10 +209,8 @@ function iniciarCronometro() {
 function pausarJuego() {
     juegoPausado = true;
     btnPausa.textContent = "Continuar";
-
-    const botones = letrasContainer.querySelectorAll("button");
     letrasOriginales = [];
-    botones.forEach((btn, i) => {
+    letrasContainer.querySelectorAll("button").forEach((btn, i) => {
         letrasOriginales[i] = btn.textContent;
         btn.textContent = "";
         btn.disabled = true;
@@ -216,14 +220,9 @@ function pausarJuego() {
 function continuarJuego() {
     juegoPausado = false;
     btnPausa.textContent = "Pausa";
-
-    let botones = letrasContainer.querySelectorAll("button");
-    botones.forEach((btn, i) => {
+    letrasContainer.querySelectorAll("button").forEach((btn, i) => {
         btn.textContent = letrasOriginales[i];
-        if (!btn.classList.contains("usado")) {
+        if (!btn.classList.contains("usado"))
             btn.disabled = false;
-        }
     });
 }
-
-window.addEventListener("load", iniciarJuego);
