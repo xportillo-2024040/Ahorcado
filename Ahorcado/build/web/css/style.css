@@ -415,3 +415,11 @@ h1 {
     opacity: 1;
   }
 }
+
+.error-message {
+    color: #d9534f;
+    font-size: 0.9em;
+    margin-left: 10px; /* Para que quede al lado del input */
+    vertical-align: middle;
+}
+

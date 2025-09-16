@@ -24,28 +24,36 @@
         <main class="contenido-inicio">
             <section>
                 <h2>Iniciar Sesión</h2>
-                <form onsubmit="return validarLogin()" class="form-login">
+                <form action="Validar" method="POST" class="form-login" autocomplete="off">
                     <div class="campo">
                         <label for="usuario">Usuario:</label>
                         <div>
                             <i class='bx bxs-user'></i>
-                            <input type="text" id="usuario" name="usuario" required>
+                            <input type="text" id="usuario" name="usuario" required autocomplete="off"
+                                   value="<%= request.getAttribute("usuario") != null ? request.getAttribute("usuario") : ""%>">
                         </div>
                     </div>
                     <div class="campo">
                         <label for="contrasena">Contraseña:</label>
                         <div>
                             <i class='bx bxs-lock-alt'></i>
-                            <input type="password" id="contrasena" name="contrasena" required>
+                            <input type="password" id="contrasena" name="contrasena" required autocomplete="off">
                         </div>
                     </div>
                     <div class="campo">
                         <label><input type="checkbox" onclick="togglePassword()"> Ver contraseña</label>
                     </div>
                     <div class="botones-inicio">
-                        <button type="submit">Entrar</button>
+                        <button type="submit" name="accion" value="Ingresar">Entrar</button>
                     </div>
-                    <p id="mensaje-error"></p>
+
+                    <!-- Aquí mostramos el mensaje de error solo si existe -->
+                    <% if (request.getAttribute("error") != null) {%>
+                    <div id="mensaje-error" style="color:red; font-size:14px; margin-top: 10px;">
+                        <%= request.getAttribute("error")%>
+                    </div>
+                    <% }%>
+
                 </form>
             </section>
         </main>
@@ -59,3 +67,4 @@
     </body>
 
 </html>
+
