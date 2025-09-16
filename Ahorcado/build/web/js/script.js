@@ -41,23 +41,15 @@ btnPausa.addEventListener("click", () => juegoPausado ? continuarJuego() : pausa
 window.addEventListener("load", iniciarJuego);
 
 // --- Funciones ---
-function validarLogin() {
-    let usuario = document.getElementById('usuario').value;
-    let contrasena = document.getElementById('contrasena').value;
-    let mensajeError = document.getElementById('mensaje-error');
-
-    if (usuario === "1" && contrasena === "1") {
-        window.location.href = "inicio.jsp";
-        return false;
-    } else {
-        mensajeError.textContent = "Usuario o contraseña incorrectos.";
-        return false;
-    }
-}
 
 function togglePassword() {
-    let input = document.getElementById("contrasena");
-    input.type = input.type === "password" ? "text" : "password";
+    var passwordField = document.getElementById("contrasena");
+    var checkbox = document.querySelector("input[type='checkbox']");
+    if (checkbox.checked) {
+        passwordField.type = "text";  // Mostrar la contraseña
+    } else {
+        passwordField.type = "password";  // Ocultar la contraseña
+    }
 }
 
 async function iniciarJuego() {
