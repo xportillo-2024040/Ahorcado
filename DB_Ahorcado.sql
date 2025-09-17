@@ -27,7 +27,7 @@ VALUES  ('BARCELONA', 'Ciudad en España', 'Tiene la famosa iglesia La Sagrada F
         
 INSERT INTO Usuario (correo_usuario, contraseña_usuario)
 VALUES ('xaportilloe@gmail.com', 'Rokaxixa'),
-	   ('miltonlarita@gmail.com', 'Pachon'	);
+	   ('miltonlarita@gmail.com', 'Lara');
 
 delimiter //
 create procedure sp_ObtenerPalabraAleatoria()
